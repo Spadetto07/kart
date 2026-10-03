@@ -401,7 +401,8 @@ begin
       'mensagem', 'Senha errada.');
   end if;
 
-  delete from kart_admin_falhas;
+  -- "where true": o Supabase recusa DELETE sem WHERE quando a chamada vem do site.
+  delete from kart_admin_falhas where true;
 
   case coalesce(p_acao, 'painel')
     when 'painel' then
@@ -487,7 +488,7 @@ begin
     raise exception 'A senha precisa ter pelo menos 8 caracteres.';
   end if;
   update kart_config set senha_admin = crypt(p_senha, gen_salt('bf', 10)) where id = 1;
-  delete from kart_admin_falhas;
+  delete from kart_admin_falhas where true;
   return 'Senha do organizador gravada.';
 end
 $$;
