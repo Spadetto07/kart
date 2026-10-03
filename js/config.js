@@ -37,6 +37,7 @@ window.KART_CONFIG = {
         "Abre domingo de manhã, a partir das 08h30"
       ],
       regras: [
+        "Mínimo de 5 e máximo de 18 pilotos por corrida",
         "Idade mínima de 13 anos",
         "Altura mínima de 1,55 m"
       ],
