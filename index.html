@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#151618">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Votação do Kart</title>
+  <meta name="description" content="Vote na pista, no dia e no horário da corrida de kart. Um voto por piloto.">
+  <meta property="og:title" content="Votação do Kart">
+  <meta property="og:description" content="Duas pistas na disputa. Vote na pista, no dia e no horário.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:ital,wdth,wght@0,50..125,100..900;1,50..125,100..900&display=swap">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme inline {
+      --font-sans: "Saira", ui-sans-serif, system-ui, sans-serif;
+      --color-asfalto: var(--asfalto);
+      --color-piso: var(--piso);
+      --color-brita: var(--brita);
+      --color-borracha: var(--borracha);
+      --color-faixa: var(--faixa);
+      --color-apagada: var(--apagada);
+      --color-placa: var(--placa);
+      --color-zebra: var(--zebra);
+      --color-verde: var(--verde);
+    }
+  </style>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div id="faixa-aviso" class="faixa-aviso" hidden></div>
+
+  <!-- ================= TOPO + PORTÃO (nome e WhatsApp) ================= -->
+  <header class="topo">
+    <div class="grid-largada" aria-hidden="true"></div>
+
+    <div class="relative mx-auto grid w-full max-w-5xl gap-8 px-5 pt-10 pb-12 md:grid-cols-[1.2fr_.8fr] md:items-center md:gap-14 md:py-16">
+      <div>
+        <p class="evento" id="evento">Campeonato de Kart</p>
+        <h1 class="titulo mt-3">Qual pista,<br>que dia,<br>que horas?</h1>
+        <p class="apoio mt-6 max-w-md text-lg">Duas pistas na disputa. Cada piloto vota uma vez, com o próprio WhatsApp.</p>
+      </div>
+
+      <!-- Antes de validar -->
+      <form id="portao" class="portao" novalidate>
+        <h2>Libere seu voto</h2>
+        <label class="campo">
+          <span>Seu nome</span>
+          <input id="nome" name="nome" type="text" autocomplete="name" maxlength="60" placeholder="Como a turma te chama">
+        </label>
+        <label class="campo">
+          <span>Seu WhatsApp, com DDD</span>
+          <input id="telefone" name="telefone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="(27) 99999-9999">
+        </label>
+        <div id="portao-aviso" class="aviso" role="alert" hidden></div>
+        <button id="btn-liberar" type="submit" class="botao cheio mt-5">Liberar meu voto</button>
+        <p class="apoio mt-4 text-sm">O número só garante um voto por piloto. Ele não aparece para ninguém da turma.</p>
+      </form>
+
+      <!-- Depois de validar -->
+      <div id="liberado" class="portao" hidden>
+        <h2 id="liberado-nome">Voto liberado</h2>
+        <p class="apoio mt-1" id="liberado-tel"></p>
+        <p class="mt-4"><button type="button" class="link" id="btn-trocar">Não é você? Trocar o número</button></p>
+      </div>
+
+      <!-- Site ainda sem as chaves do Supabase -->
+      <div id="sem-config" class="portao" hidden>
+        <h2>Falta ligar o site ao banco de dados</h2>
+        <p class="apoio mt-2">Cole a URL e a chave do Supabase no arquivo <strong class="text-faixa">js/config.js</strong>. O passo a passo está no arquivo README.md.</p>
+        <p class="mt-4"><a class="link" href="?demo">Ver o site em modo demonstração</a></p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= VOTAÇÃO ================= -->
+  <main id="votacao" class="mx-auto max-w-5xl px-5 pb-16" hidden>
+
+    <section class="secao" aria-labelledby="t-pista">
+      <h2 id="t-pista" class="titulo-secao" tabindex="-1">Escolha a pista</h2>
+      <p class="apoio">Toque nas fotos para ampliar.</p>
+      <div id="pistas" class="mt-6 grid gap-6 md:grid-cols-2"></div>
+    </section>
+
+    <section class="secao" aria-labelledby="t-dia">
+      <h2 id="t-dia" class="titulo-secao">Escolha o dia</h2>
+      <p class="apoio" id="dia-dica"></p>
+      <div id="calendario" class="mt-6 grid gap-x-10 gap-y-8 sm:grid-cols-2"></div>
+    </section>
+
+    <section class="secao" aria-labelledby="t-hora">
+      <h2 id="t-hora" class="titulo-secao">Escolha o horário</h2>
+      <p class="apoio">É o horário de largada que você prefere. A reserva é fechada com a pista depois da votação.</p>
+      <div id="horarios" class="mt-6 flex flex-wrap gap-3"></div>
+    </section>
+  </main>
+
+  <!-- Barra fixa: semáforo + botão de voto -->
+  <div id="largada" class="largada" hidden>
+    <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-5 md:flex-nowrap md:gap-x-8">
+      <p id="resumo" class="resumo order-1 w-full md:order-2 md:w-auto md:flex-1" aria-live="polite"></p>
+      <ol class="semaforo order-2 md:order-1" id="semaforo" aria-label="O que falta para votar">
+        <li data-luz="telefone"><span class="luz"></span><span class="nome-luz">Telefone</span></li>
+        <li data-luz="pista"><span class="luz"></span><span class="nome-luz">Pista</span></li>
+        <li data-luz="data"><span class="luz"></span><span class="nome-luz">Dia</span></li>
+        <li data-luz="horario"><span class="luz"></span><span class="nome-luz">Horário</span></li>
+      </ol>
+      <button id="btn-votar" type="button" class="botao order-3 flex-1 md:flex-none" disabled>Votar</button>
+    </div>
+  </div>
+
+  <!-- ================= PLACAR ================= -->
+  <main id="placar" class="mx-auto max-w-3xl px-5 pb-24" hidden>
+    <p class="evento pt-10" id="evento-placar"></p>
+    <div class="confirmado mt-4">
+      <h2 class="titulo-secao" id="placar-titulo" tabindex="-1">Voto registrado</h2>
+      <p class="mt-2 text-lg" id="meu-voto"></p>
+    </div>
+
+    <section class="secao" aria-labelledby="t-placar">
+      <h2 id="t-placar" class="titulo-secao">Placar parcial</h2>
+      <div id="placar-dados" hidden>
+        <p class="apoio mt-2" id="placar-total"></p>
+        <div id="placar-pistas"></div>
+        <h3 class="mt-10 text-xl font-bold">Dias e horários mais votados</h3>
+        <ol class="combos" id="placar-combos"></ol>
+      </div>
+
+      <div id="placar-aviso" class="aviso" role="alert" hidden></div>
+      <div class="mt-8 flex flex-wrap gap-4">
+        <button type="button" class="botao contorno" id="btn-atualizar">Atualizar placar</button>
+        <a class="botao" id="btn-zap" target="_blank" rel="noopener">Mandar o link no grupo</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mx-auto max-w-5xl px-5 py-8 text-sm text-apagada">
+    <p>Um voto por WhatsApp, conferido no servidor. <a class="link" href="admin.html">Área do organizador</a></p>
+  </footer>
+
+  <!-- Confirmação antes de gravar -->
+  <dialog id="confirma" class="dialogo" aria-labelledby="confirma-titulo">
+    <h2 id="confirma-titulo">Confirmar o voto?</h2>
+    <dl>
+      <div><dt>Pista</dt><dd id="c-pista"></dd></div>
+      <div><dt>Dia</dt><dd id="c-data"></dd></div>
+      <div><dt>Horário</dt><dd id="c-hora"></dd></div>
+    </dl>
+    <p class="apoio mt-4">Depois de confirmar não dá para trocar.</p>
+    <div id="confirma-aviso" class="aviso" role="alert" hidden></div>
+    <div class="mt-6 flex flex-wrap-reverse gap-4">
+      <button type="button" class="botao contorno" id="btn-voltar">Voltar</button>
+      <button type="button" class="botao" id="btn-gravar">Confirmar voto</button>
+    </div>
+  </dialog>
+
+  <!-- Foto ampliada -->
+  <dialog id="ampliada" class="ampliada" aria-label="Foto ampliada">
+    <img id="ampliada-img" alt="">
+    <button type="button" class="galeria-seta ant" id="ampliada-ant" aria-label="Foto anterior"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4 6.5 10l6 6"/></svg></button>
+    <button type="button" class="galeria-seta prox" id="ampliada-prox" aria-label="Próxima foto"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 4l6 6-6 6"/></svg></button>
+    <span class="galeria-conta" id="ampliada-conta"></span>
+    <button type="button" class="fechar" id="ampliada-fechar" aria-label="Fechar foto"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 4l12 12M16 4 4 16"/></svg></button>
+  </dialog>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

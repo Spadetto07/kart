@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#151618">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Organizador: Votação do Kart</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:ital,wdth,wght@0,50..125,100..900;1,50..125,100..900&display=swap">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme inline {
+      --font-sans: "Saira", ui-sans-serif, system-ui, sans-serif;
+      --color-asfalto: var(--asfalto);
+      --color-piso: var(--piso);
+      --color-brita: var(--brita);
+      --color-borracha: var(--borracha);
+      --color-faixa: var(--faixa);
+      --color-apagada: var(--apagada);
+      --color-placa: var(--placa);
+      --color-zebra: var(--zebra);
+      --color-verde: var(--verde);
+    }
+  </style>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+  <div class="mx-auto max-w-4xl px-5 pb-24">
+
+    <header class="pt-10">
+      <p><a class="link" href="index.html">Voltar para a votação</a></p>
+      <h1 class="titulo-secao mt-4">Área do organizador</h1>
+    </header>
+
+    <!-- Entrada -->
+    <form id="entrada" class="portao mt-8 max-w-md" novalidate>
+      <h2>Entre com a senha</h2>
+      <label class="campo">
+        <span>Senha do organizador</span>
+        <input id="senha" type="password" autocomplete="current-password">
+      </label>
+      <div id="entrada-aviso" class="aviso" role="alert" hidden></div>
+      <button id="btn-entrar" type="submit" class="botao cheio mt-5">Entrar</button>
+      <p class="apoio mt-4 text-sm">A senha é criada no Supabase (README.md, passo 2). Depois de 5 erros a entrada trava por 15 minutos.</p>
+    </form>
+
+    <!-- Painel -->
+    <div id="painel" hidden>
+
+      <div id="painel-aviso" class="aviso" role="status" hidden></div>
+
+      <div class="mt-8 grid gap-4 sm:grid-cols-3">
+        <div class="cartao"><p class="grande" id="n-votos">0</p><p class="apoio mt-1">votos registrados</p></div>
+        <div class="cartao"><p class="grande" id="n-pilotos">0</p><p class="apoio mt-1" id="n-pilotos-rotulo">pilotos cadastrados</p></div>
+        <div class="cartao"><p class="grande" id="n-faltam">0</p><p class="apoio mt-1">ainda não votaram</p></div>
+      </div>
+
+      <section class="secao" aria-labelledby="t-res">
+        <h2 id="t-res" class="titulo-secao">Resultado</h2>
+        <div id="res-pistas"></div>
+        <h3 class="mt-10 text-xl font-bold">Dias e horários mais votados</h3>
+        <ol class="combos" id="res-combos"></ol>
+        <p class="mt-6"><button type="button" class="botao contorno pequeno" id="btn-recarregar">Atualizar</button></p>
+      </section>
+
+      <section class="secao" aria-labelledby="t-ctrl">
+        <h2 id="t-ctrl" class="titulo-secao">Controles</h2>
+        <div class="mt-4 border-t border-brita">
+          <label class="chave">
+            <input type="checkbox" id="ch-aberta">
+            <span><strong>Votação aberta</strong>
+            <small>Desligue para encerrar. Quem já votou continua vendo o placar.</small></span>
+          </label>
+          <label class="chave">
+            <input type="checkbox" id="ch-fechada">
+            <span><strong>Lista fechada</strong>
+            <small>Ligada: só vota o WhatsApp que estiver na lista de pilotos abaixo. Desligada: qualquer WhatsApp vota uma vez.</small></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="secao" aria-labelledby="t-add">
+        <h2 id="t-add" class="titulo-secao">Adicionar pilotos</h2>
+        <p class="apoio">Um piloto por linha, com nome e WhatsApp em qualquer ordem. Dá para colar a lista inteira de uma vez.</p>
+        <label class="campo max-w-xl">
+          <span class="so-leitor">Lista de pilotos</span>
+          <textarea id="lista" rows="5" placeholder="João 27 99999-8888&#10;Maria (27) 98888-7777"></textarea>
+        </label>
+        <p class="mt-4"><button type="button" class="botao pequeno" id="btn-adicionar">Adicionar à lista</button></p>
+      </section>
+
+      <section class="secao" aria-labelledby="t-pil">
+        <h2 id="t-pil" class="titulo-secao">Pilotos</h2>
+        <div class="mt-4 overflow-x-auto">
+          <table class="tabela">
+            <thead><tr><th>Nome</th><th>WhatsApp</th><th>Voto</th><th><span class="so-leitor">Ações</span></th></tr></thead>
+            <tbody id="pilotos"></tbody>
+          </table>
+        </div>
+        <p class="vazio-dica mt-4" id="pilotos-vazio" hidden>Nenhum piloto ainda. Os nomes aparecem aqui conforme a turma vota, ou quando você adiciona a lista.</p>
+      </section>
+    </div>
+  </div>
+
+  <dialog id="confirma" class="dialogo" aria-labelledby="confirma-titulo">
+    <h2 id="confirma-titulo"></h2>
+    <p class="apoio mt-3" id="confirma-texto"></p>
+    <div class="mt-6 flex flex-wrap-reverse gap-4">
+      <button type="button" class="botao contorno pequeno" id="btn-nao">Voltar</button>
+      <button type="button" class="botao perigo" id="btn-sim"></button>
+    </div>
+  </dialog>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
